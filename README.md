@@ -366,6 +366,37 @@ Human review was also completed using the project rubric.
 
 The deterministic checks validate structure and known failure patterns. They do not prove semantic faithfulness, strong personalization, or overall usefulness. Those dimensions remain part of the human review.
 
+## Run Slice 6: Serve the pathway API
+
+Slice 6 exposes the existing workflow over HTTP so a React or other frontend can call it.
+
+Ensure the knowledge base and vector index already exist, then authenticate with Azure:
+
+```powershell
+uv run python -m mosaic_pathway.knowledge_base
+uv run python -m mosaic_pathway.vector_store
+az login
+```
+
+Start the service:
+
+```powershell
+uv run uvicorn mosaic_pathway.api:app --reload
+```
+
+The API provides:
+
+| Method | Path                | Purpose                                            |
+|--------|---------------------|----------------------------------------------------|
+| GET    | `/health`           | Confirms the API process is running                |
+| POST   | `/api/v1/pathways`  | Accepts a `FamilyIntake` and returns a pathway     |
+
+FastAPI serves its generated interfaces locally at `/docs`, `/redoc`, and `/openapi.json`.
+
+The response contains the validated pathway plus truncated source summaries. Complete retrieved passages are never returned. Browser origins allowed to call the API are configured through `MOSAIC_ALLOWED_ORIGINS`.
+
+Requests and responses are not persisted or logged.
+
 ## Current status
 
 ### Slice 0 — Complete
@@ -448,6 +479,19 @@ The deterministic checks validate structure and known failure patterns. They do 
 - submitted family information is not persisted
 - UI helper tests remain independent of Azure OpenAI and the production vector store
 
+### Slice 6 — Complete
+
+- lean FastAPI service added over the existing workflow
+- `GET /health` and `POST /api/v1/pathways` exposed
+- `FamilyIntake` reused as the request contract
+- expensive dependencies built once through a lifespan handler
+- application factory allows a fake service to be injected in tests
+- retrieved evidence reduced to truncated source summaries
+- domain failures mapped to explicit 422, 502, 503, and 500 responses
+- configurable CORS origins added for local frontend development
+- API tests remain offline and independent of Azure OpenAI and Qdrant
+- requests and responses are not persisted or logged
+
 ### Next
 
 The final slice will focus on project handoff:
@@ -466,8 +510,9 @@ The final slice will focus on project handoff:
 4. **Local embeddings and retrieval** — complete
 5. **End-to-end RAG pathway generation** — complete
 6. **Pathway and retrieval evaluation** — complete
-7. **Minimal Streamlit interface**
-8. **Final documentation, notebooks, and handoff**
+7. **Minimal Streamlit interface** — complete
+8. **Lean FastAPI backend** — complete
+9. **Final documentation, notebooks, and handoff**
 
 Each slice is intentionally small and must work before the next capability is added.
 
