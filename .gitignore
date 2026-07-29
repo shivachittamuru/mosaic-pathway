@@ -26,3 +26,6 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .venv/
+
+# Manually curated private source context
+data/manual/

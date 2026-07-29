@@ -3,7 +3,6 @@ from pathlib import Path
 
 from mosaic_pathway.models import SourceInventoryItem
 
-
 INVENTORY_PATH = Path("data/inventory/sources.json")
 
 
