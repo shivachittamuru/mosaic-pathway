@@ -12,7 +12,8 @@ The system:
 2. Retrieves relevant guidance from Mosaic’s knowledge base.
 3. Uses an LLM to generate a personalized learning pathway.
 4. Validates the generated response and its source references.
-5. Produces a concise pathway containing:
+5. Evaluates the pathway using deterministic checks and human review.
+6. Produces a concise pathway containing:
 
    * a reflection of the family’s values and intentions
    * a practical starting rhythm
@@ -39,7 +40,10 @@ Relevant Mosaic passages
 Azure OpenAI generation
           |
           v
-Validated, grounded LearningPathway
+Validated GroundedPathwayResult
+          |
+          v
+Deterministic checks + human review
 ```
 
 The local knowledge base is prepared separately:
@@ -140,6 +144,7 @@ Do not commit:
 * extracted or cleaned Mosaic content
 * local vector-store files
 * generated pathways based on private content
+* evaluation outputs containing retrieved Mosaic passages
 * `.env`
 * real family information
 * prompts or traces containing private content
@@ -297,6 +302,70 @@ data/manual/grounded_pathway_output.json
 
 Structured source IDs are stored in dedicated `source_id` fields rather than being displayed inside family-facing prose.
 
+## Run Slice 4: Evaluate pathway quality
+
+Slice 4 evaluates complete grounded pathways using deterministic checks and a human-review rubric.
+
+Ensure the knowledge base and vector index already exist:
+
+```powershell
+uv run python -m mosaic_pathway.knowledge_base
+uv run python -m mosaic_pathway.vector_store
+```
+
+Authenticate with Azure:
+
+```powershell
+az login
+```
+
+Run the six-case end-to-end evaluation:
+
+```powershell
+uv run python -m mosaic_pathway.slice4_evaluation
+```
+
+The evaluation:
+
+1. Loads six synthetic family cases.
+2. Runs the complete RAG workflow for every case.
+3. Saves each private grounded result locally.
+4. Applies deterministic structural, citation, length, scope, and weak personalization checks.
+5. Produces a combined evaluation report.
+6. Supports a separate human review of usefulness, evidence support, practicality, tone, and scope adherence.
+
+Generated evaluation artifacts are written under:
+
+```text
+data/evaluation/
+```
+
+This directory is excluded from Git because the results contain retrieved Mosaic content.
+
+### Slice 4 baseline
+
+The initial deterministic evaluation produced:
+
+```text
+Cases evaluated: 6
+Cases passed: 6
+Checks passed: 60/60
+Check pass rate: 100%
+```
+
+The six synthetic cases cover:
+
+* gentle transition away from rigid schooling
+* neurodivergent teen autonomy and community
+* limited time and budget
+* educator-parent unlearning classroom habits
+* college exploration without rankings pressure
+* recovery from school harm
+
+Human review was also completed using the project rubric.
+
+The deterministic checks validate structure and known failure patterns. They do not prove semantic faithfulness, strong personalization, or overall usefulness. Those dimensions remain part of the human review.
+
 ## Current status
 
 ### Slice 0 — Complete
@@ -352,16 +421,21 @@ Structured source IDs are stored in dedicated `source_id` fields rather than bei
 * intake, retrieval query, evidence, and pathway preserved together
 * generated output kept outside Git
 
+### Slice 4 — Complete
+
+* six synthetic family evaluation cases added
+* complete RAG workflow evaluated across all cases
+* deterministic pathway checks implemented
+* citation, structure, length, scope, and weak personalization indicators added
+* private grounded results and reports stored outside Git
+* 6 of 6 cases passed deterministic evaluation
+* 60 of 60 deterministic checks passed
+* human-review rubric created and completed
+* known limits of deterministic evaluation documented
+
 ### Next
 
-The next slice will evaluate the complete pathway for:
-
-* retrieval relevance
-* evidence support
-* personalization
-* usefulness
-* tone
-* safety and scope adherence
+The next slice will add a minimal Streamlit interface for entering a family profile and generating a grounded pathway.
 
 ## Development slices
 
@@ -370,7 +444,7 @@ The next slice will evaluate the complete pathway for:
 3. **Content extraction and cleaning** — complete
 4. **Local embeddings and retrieval** — complete
 5. **End-to-end RAG pathway generation** — complete
-6. **Pathway and retrieval evaluation**
+6. **Pathway and retrieval evaluation** — complete
 7. **Minimal Streamlit interface**
 8. **Final documentation, notebooks, and handoff**
 
@@ -381,14 +455,19 @@ Each slice is intentionally small and must work before the next capability is ad
 * The Mosaic website source contains approximately 82% of all records.
 * Some nonconsecutive duplicate website sections remain in the processed data.
 * Embedding similarity scores are not probabilities.
-* Retrieval quality is currently evaluated using a small synthetic query set.
+* Retrieval quality is evaluated using a small synthetic query set.
 * Retrieval uses semantic vector search only.
 * There is no keyword search, reranking, or hybrid retrieval.
-* A valid source ID does not automatically prove that every generated claim is fully supported by that source.
+* Citation validation confirms that an ID was retrieved, not that every generated claim is semantically supported.
+* Personalization indicators use lexical matching and can reward keyword repetition.
+* Prohibited-phrase checks use a small substring list and are not comprehensive safety validation.
+* Word-count checks detect empty or runaway sections, not vagueness or repetition.
+* Exact duplicate detection does not identify semantic near-duplicates.
+* Deterministic checks use hard pass or fail outcomes without severity weighting.
 * Azure authentication may require an explicit tenant when the resource and CLI defaults differ.
 * No real family data should be used during development.
 
-These limitations are retained until evaluation demonstrates that additional complexity is necessary.
+These limitations are retained until evidence shows that additional complexity is necessary.
 
 ## Privacy and scope boundaries
 
@@ -396,7 +475,7 @@ During development:
 
 * use synthetic family profiles
 * keep Mosaic materials local
-* keep processed records and vectors local
+* keep processed records, vectors, and evaluations local
 * do not commit secrets
 * do not use real child or family information
 * do not provide medical, psychological, legal, or diagnostic advice

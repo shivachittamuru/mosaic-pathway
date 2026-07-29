@@ -31,3 +31,6 @@ __pycache__/
 data/manual/
 
 data/vector_store/
+
+# Generated evaluation results and private evidence
+data/evaluation/

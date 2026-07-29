@@ -1,0 +1,40 @@
+{
+  "case_id": "neurodivergent-teen-autonomy",
+  "description": "A neurodivergent teenager seeking autonomy, creative work, and a low-pressure community.",
+  "intake": {
+    "children": [
+      {
+        "label": "teen learner",
+        "age": 15,
+        "interests": ["digital art", "animation", "animals"],
+        "learning_needs": [
+          "sensory sensitivity",
+          "needs recovery time after social activities",
+          "works best with flexible transitions"
+        ]
+      }
+    ],
+    "leaving_behind": [
+      "constant deadlines",
+      "large noisy classrooms",
+      "learning organized only around grades"
+    ],
+    "wants_to_preserve": [
+      "two close friendships",
+      "interest in eventually attending college"
+    ],
+    "wants_to_add": [
+      "space to recover from school stress",
+      "interest-led creative work",
+      "a gradual path toward future planning"
+    ],
+    "family_values": [
+      "emotional safety",
+      "autonomy",
+      "creativity",
+      "future choice"
+    ],
+    "practical_constraints": ["limited budget", "parent works during the day"],
+    "additional_context": "The family wants to avoid recreating school at home but is nervous about college preparation."
+  }
+}

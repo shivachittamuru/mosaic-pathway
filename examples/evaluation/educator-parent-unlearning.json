@@ -1,0 +1,34 @@
+{
+  "case_id": "educator-parent-unlearning",
+  "description": "A former classroom teacher who keeps rebuilding school at home and wants to loosen that grip.",
+  "intake": {
+    "children": [
+      {
+        "label": "older child",
+        "age": 12,
+        "interests": ["history documentaries", "chess", "baking"],
+        "learning_needs": ["resists assigned writing tasks"]
+      }
+    ],
+    "leaving_behind": [
+      "detailed lesson plans for every subject",
+      "grading the work my own child produces",
+      "measuring progress against grade-level benchmarks"
+    ],
+    "wants_to_preserve": [
+      "a light weekly planning habit",
+      "wide access to books and materials"
+    ],
+    "wants_to_add": [
+      "genuine choice about what to study",
+      "trust that unstructured time is productive",
+      "fewer parent-designed assignments"
+    ],
+    "family_values": ["intellectual depth", "mutual respect", "follow-through"],
+    "practical_constraints": [
+      "parent tutors part time in the afternoons",
+      "shared workspace at home"
+    ],
+    "additional_context": "The parent taught middle school for eleven years and notices themselves recreating a classroom timetable at the kitchen table."
+  }
+}

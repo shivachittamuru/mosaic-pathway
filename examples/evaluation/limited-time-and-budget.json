@@ -1,0 +1,39 @@
+{
+  "case_id": "limited-time-and-budget",
+  "description": "A single-parent household with very little free time and almost no discretionary budget.",
+  "intake": {
+    "children": [
+      {
+        "label": "middle child",
+        "age": 9,
+        "interests": ["cooking", "soccer", "comic books"],
+        "learning_needs": ["reading takes extra effort"]
+      },
+      {
+        "label": "youngest child",
+        "age": 6,
+        "interests": ["building with blocks", "songs"],
+        "learning_needs": []
+      }
+    ],
+    "leaving_behind": [
+      "long homework evenings",
+      "expensive enrichment programs",
+      "activities that require a weekday commute"
+    ],
+    "wants_to_preserve": ["shared evening meals"],
+    "wants_to_add": [
+      "learning that fits into ordinary errands and chores",
+      "free or low-cost local options",
+      "shorter and calmer days"
+    ],
+    "family_values": ["resourcefulness", "honesty", "steadiness"],
+    "practical_constraints": [
+      "single parent working two jobs",
+      "no reliable car",
+      "very small monthly budget",
+      "limited weekday supervision"
+    ],
+    "additional_context": "The parent has roughly one free hour on weekday evenings and needs suggestions that survive an unpredictable schedule."
+  }
+}

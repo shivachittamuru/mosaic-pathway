@@ -1,0 +1,38 @@
+{
+  "case_id": "college-exploration",
+  "description": "An older teenager exploring life after high school without ranking or prestige pressure.",
+  "intake": {
+    "children": [
+      {
+        "label": "oldest teen",
+        "age": 17,
+        "interests": [
+          "marine biology",
+          "photography",
+          "volunteering at an animal shelter"
+        ],
+        "learning_needs": ["prefers long uninterrupted work sessions"]
+      }
+    ],
+    "leaving_behind": [
+      "competitive class rankings",
+      "standardized test preparation as a full-time occupation",
+      "choosing subjects only to impress admissions readers"
+    ],
+    "wants_to_preserve": [
+      "a serious interest in science",
+      "part-time shelter work"
+    ],
+    "wants_to_add": [
+      "a realistic look at several post-secondary paths",
+      "conversations with adults doing work she admires",
+      "a portfolio that reflects real projects"
+    ],
+    "family_values": ["integrity", "curiosity", "self-direction", "service"],
+    "practical_constraints": [
+      "in-state tuition is the realistic ceiling",
+      "no travel budget for campus visits"
+    ],
+    "additional_context": "The family wants college to stay one option among several rather than the only acceptable outcome."
+  }
+}

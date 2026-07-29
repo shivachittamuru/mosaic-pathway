@@ -171,6 +171,22 @@ class GroundedPathwayResult(BaseModel):
     pathway: LearningPathway
 
 
+class EvaluationCase(BaseModel):
+    """One synthetic family used to evaluate end-to-end pathway generation."""
+
+    case_id: str = Field(min_length=1)
+    description: str = Field(min_length=1)
+    intake: FamilyIntake
+
+    @field_validator("case_id")
+    @classmethod
+    def validate_case_id_is_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("case_id must not be blank")
+
+        return value
+
+
 class SourceInventoryItem(BaseModel):
     """Human-reviewed description of one supplied knowledge source."""
 

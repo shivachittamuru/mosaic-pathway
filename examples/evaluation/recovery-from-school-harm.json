@@ -1,0 +1,38 @@
+{
+  "case_id": "recovery-from-school-harm",
+  "description": "A child recovering from sustained harm at school, where rest matters more than academics.",
+  "intake": {
+    "children": [
+      {
+        "label": "recovering child",
+        "age": 11,
+        "interests": ["horses", "audiobooks", "drawing"],
+        "learning_needs": [
+          "anxious about being evaluated",
+          "needs predictable low-demand days",
+          "shuts down when rushed"
+        ]
+      }
+    ],
+    "leaving_behind": [
+      "a school that dismissed repeated bullying reports",
+      "daily pressure to perform in front of peers",
+      "adults who did not believe my child"
+    ],
+    "wants_to_preserve": [
+      "one trusted friendship outside school",
+      "weekly time at the stable"
+    ],
+    "wants_to_add": [
+      "unhurried time to rest and recover",
+      "small experiences of feeling capable again",
+      "trust that learning will return on its own"
+    ],
+    "family_values": ["safety", "belonging", "patience", "dignity"],
+    "practical_constraints": [
+      "counseling appointments on Tuesdays",
+      "both parents work part time"
+    ],
+    "additional_context": "The family expects the first months to focus on recovery rather than academic progress and wants suggestions that will not feel like another demand."
+  }
+}
