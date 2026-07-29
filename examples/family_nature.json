@@ -1,0 +1,50 @@
+{
+  "children": [
+    {
+      "label": "younger child",
+      "age": 7,
+      "interests": [
+        "animals",
+        "drawing",
+        "being outdoors"
+      ],
+      "learning_needs": []
+    },
+    {
+      "label": "older child",
+      "age": 10,
+      "interests": [
+        "building",
+        "science experiments",
+        "video games"
+      ],
+      "learning_needs": []
+    }
+  ],
+  "leaving_behind": [
+    "rigid daily schedules",
+    "frequent worksheets",
+    "pressure to keep both children at the same pace"
+  ],
+  "wants_to_preserve": [
+    "reading together",
+    "friendships from their current community"
+  ],
+  "wants_to_add": [
+    "more outdoor learning",
+    "more choice for each child",
+    "a calmer family rhythm"
+  ],
+  "family_values": [
+    "curiosity",
+    "family connection",
+    "creativity",
+    "independence"
+  ],
+  "practical_constraints": [
+    "one parent works full time",
+    "limited weekday transportation",
+    "moderate budget"
+  ],
+  "additional_context": "The family is new to self-directed learning and feels overwhelmed by the number of available options."
+}
