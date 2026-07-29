@@ -125,3 +125,37 @@ class LearningPathway(BaseModel):
     closing_note: str = Field(
         description="A short, warm, non-prescriptive closing message."
     )
+
+
+class SourceInventoryItem(BaseModel):
+    """Human-reviewed description of one supplied knowledge source."""
+
+    source_id: str = Field(min_length=3)
+    filename: str = Field(min_length=3)
+    title: str = Field(min_length=3)
+
+    format: Literal["pdf", "docx"]
+
+    content_type: Literal[
+        "mixed",
+        "podcast_transcript",
+    ]
+
+    primary_topics: list[str] = Field(min_length=1)
+    audience: str = Field(min_length=3)
+
+    rag_priority: Literal[
+        "core",
+        "situational",
+        "exclude",
+    ]
+
+    authority_type: Literal[
+        "mosaic_guidance",
+        "expert_guidance",
+        "lived_experience",
+        "mixed_expert_and_lived_experience",
+    ]
+
+    requires_cleaning: bool
+    notes: str = Field(min_length=10)

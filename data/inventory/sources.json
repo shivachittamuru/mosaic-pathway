@@ -1,0 +1,174 @@
+[
+  {
+    "source_id": "mosaic-web-resources",
+    "filename": "Resources_Mosaic.docx",
+    "title": "Mosaic Website Resources",
+    "format": "docx",
+    "content_type": "mixed",
+    "primary_topics": [
+      "self-directed education",
+      "deschooling",
+      "family guidance",
+      "activities",
+      "community",
+      "resources"
+    ],
+    "audience": "all families",
+    "rag_priority": "core",
+    "authority_type": "mosaic_guidance",
+    "requires_cleaning": true,
+    "notes": "Large website export containing articles, guides, stories, activities, repeated navigation, footers, duplicate content, and external resource references."
+  },
+  {
+    "source_id": "podcast-learning-on-your-own",
+    "filename": "Navigating-Self-Directed-Learning-on-Your-Own-Transcript.pdf",
+    "title": "When You're Navigating Self-Directed Learning on Your Own",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "single parenting",
+      "limited support",
+      "trust",
+      "flexibility",
+      "family rhythm"
+    ],
+    "audience": "families navigating self-directed learning with limited support",
+    "rag_priority": "core",
+    "authority_type": "lived_experience",
+    "requires_cleaning": true,
+    "notes": "Useful for families managing self-directed learning with limited time, energy, or caregiver support."
+  },
+  {
+    "source_id": "podcast-affording-path",
+    "filename": "Affording-a-Different-Path-The-Economics-of-Self-Directed-Learning-Transcript.pdf",
+    "title": "Affording a Different Path: The Economics of Self-Directed Learning",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "affordability",
+      "childcare",
+      "income trade-offs",
+      "materials",
+      "learning spaces"
+    ],
+    "audience": "budget-conscious families",
+    "rag_priority": "core",
+    "authority_type": "lived_experience",
+    "requires_cleaning": true,
+    "notes": "Helps prevent recommendations that assume abundant time, money, transportation, or childcare."
+  },
+  {
+    "source_id": "podcast-permission-to-choose",
+    "filename": "The-Independent-Learner-Podcast-by-Mosaic-Permission-to-Choose-When-Your-Learning-Path-Raises-Questions-PDF.pdf",
+    "title": "Permission to Choose: When Your Learning Path Raises Questions",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "criticism",
+      "family pressure",
+      "confidence",
+      "communication",
+      "values"
+    ],
+    "audience": "families facing doubt or criticism",
+    "rag_priority": "situational",
+    "authority_type": "expert_guidance",
+    "requires_cleaning": true,
+    "notes": "Best used for emotional reflection and communication support rather than direct activity recommendations."
+  },
+  {
+    "source_id": "podcast-college-application",
+    "filename": "Transcript-Podcast-Episode-4.pdf",
+    "title": "Unschooler Edition: Navigating the College Application Process",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "college applications",
+      "transcripts",
+      "portfolios",
+      "admissions",
+      "nontraditional learners"
+    ],
+    "audience": "teen learners considering college",
+    "rag_priority": "situational",
+    "authority_type": "expert_guidance",
+    "requires_cleaning": true,
+    "notes": "Should be retrieved primarily for older learners with college-related goals."
+  },
+  {
+    "source_id": "podcast-human-college-process",
+    "filename": "Making-the-College-Process-Human-Again.pdf",
+    "title": "Making the College Process Human Again",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "college fit",
+      "values",
+      "wellbeing",
+      "future planning",
+      "postsecondary options"
+    ],
+    "audience": "teen learners exploring postsecondary paths",
+    "rag_priority": "situational",
+    "authority_type": "expert_guidance",
+    "requires_cleaning": true,
+    "notes": "Focuses on values, identity, fit, and emotional wellbeing rather than rankings."
+  },
+  {
+    "source_id": "podcast-neurodivergence",
+    "filename": "Podcast-Episode-8-Transcript.pdf",
+    "title": "Unschooling and Neurodivergence",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "neurodivergence",
+      "sensory needs",
+      "flexibility",
+      "learner support",
+      "emotional regulation"
+    ],
+    "audience": "families supporting neurodivergent learners",
+    "rag_priority": "core",
+    "authority_type": "mixed_expert_and_lived_experience",
+    "requires_cleaning": true,
+    "notes": "Sensitive content. It may support educational suggestions but must not be used for diagnosis, therapy, or medical advice."
+  },
+  {
+    "source_id": "podcast-school-harm",
+    "filename": "Podcast-When-the-School-Hurts-Your-Child-Lynices-Story-of-Racism-Courage-and-Choosing-Unschooling.pdf",
+    "title": "When the School Hurts Your Child: Lynice's Story of Racism, Courage, and Choosing Unschooling",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "racism",
+      "school harm",
+      "belonging",
+      "safety",
+      "unschooling"
+    ],
+    "audience": "families leaving harmful or exclusionary school environments",
+    "rag_priority": "situational",
+    "authority_type": "lived_experience",
+    "requires_cleaning": true,
+    "notes": "Useful for empathy and reflection. The system must not generalize one family's experience into universal advice."
+  },
+  {
+    "source_id": "podcast-educators-as-parents",
+    "filename": "When-Educators-Become-Parents-What-Changes-When-Its-Your-Child_Transcript.pdf",
+    "title": "When Educators Become Parents: What Changes When It's Your Child",
+    "format": "pdf",
+    "content_type": "podcast_transcript",
+    "primary_topics": [
+      "former educators",
+      "unlearning school assumptions",
+      "trust",
+      "curiosity-led learning",
+      "parent transition"
+    ],
+    "audience": "parents struggling to move away from school-like structure",
+    "rag_priority": "situational",
+    "authority_type": "mixed_expert_and_lived_experience",
+    "requires_cleaning": true,
+    "notes": "Useful for families that want flexibility but remain anxious about curriculum, progress, or falling behind."
+  }
+]
