@@ -1,0 +1,28 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local Mosaic source materials
+data/raw/*
+!data/raw/.gitkeep
+
+# Generated local data
+data/processed/
+data/qdrant/
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
