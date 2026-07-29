@@ -35,6 +35,23 @@ class FamilyIntake(BaseModel):
     additional_context: str | None = None
 
 
+ContentType = Literal[
+    "framework",
+    "practical_guidance",
+    "activity",
+    "resource",
+    "community",
+    "story",
+]
+
+AuthorityType = Literal[
+    "mosaic_framework",
+    "mosaic_guidance",
+    "lived_experience",
+    "external_resource",
+]
+
+
 class SourceRecord(BaseModel):
     """A cleaned piece of Mosaic knowledge prepared for retrieval."""
 
@@ -42,21 +59,9 @@ class SourceRecord(BaseModel):
     title: str
     source_file: str
 
-    content_type: Literal[
-        "framework",
-        "practical_guidance",
-        "activity",
-        "resource",
-        "community",
-        "story",
-    ]
+    content_type: ContentType
 
-    authority_type: Literal[
-        "mosaic_framework",
-        "mosaic_guidance",
-        "lived_experience",
-        "external_resource",
-    ]
+    authority_type: AuthorityType
 
     topics: list[str] = Field(min_length=1)
     age_min: int | None = Field(default=None, ge=0, le=21)
