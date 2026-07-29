@@ -29,7 +29,10 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "ipykernel>=7.3.0",
+    "jupyter>=1.1.1",
     "mypy>=2.3.0",
+    "nbconvert>=7.17.1",
     "pytest>=9.1.1",
     "ruff>=0.16.0",
 ]
