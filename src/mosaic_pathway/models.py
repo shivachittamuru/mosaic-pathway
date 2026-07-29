@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ChildProfile(BaseModel):
@@ -79,6 +79,36 @@ class SourceRecord(BaseModel):
             raise ValueError("age_min cannot be greater than age_max")
 
         return self
+
+
+class RetrievedRecord(BaseModel):
+    """One source record returned by semantic search, with its similarity score."""
+
+    record: SourceRecord
+    score: float
+
+
+class RetrievalResult(BaseModel):
+    """The ranked records retrieved for a single query."""
+
+    query: str
+    records: list[RetrievedRecord]
+
+
+class RetrievalExample(BaseModel):
+    """One synthetic query paired with the sources a good answer should cite."""
+
+    query_id: str = Field(min_length=1)
+    query: str = Field(min_length=1)
+    expected_source_ids: list[str] = Field(min_length=1)
+
+    @field_validator("query")
+    @classmethod
+    def validate_query_is_not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("query must not be blank")
+
+        return value
 
 
 class RhythmPractice(BaseModel):

@@ -1,0 +1,76 @@
+[
+  {
+    "query_id": "gentle-transition",
+    "query": "We just pulled our child out of school and want a gentle way to start deschooling without pressure.",
+    "expected_source_ids": [
+      "mosaic-web-resources",
+      "podcast-educators-as-parents"
+    ]
+  },
+  {
+    "query_id": "neurodivergent-support",
+    "query": "How do we support a neurodivergent learner with sensory needs and big feelings during the day?",
+    "expected_source_ids": [
+      "podcast-neurodivergence",
+      "mosaic-web-resources"
+    ]
+  },
+  {
+    "query_id": "affordability",
+    "query": "Self-directed learning on a tight budget when we cannot afford expensive classes or childcare.",
+    "expected_source_ids": [
+      "podcast-affording-path"
+    ]
+  },
+  {
+    "query_id": "single-parent-capacity",
+    "query": "I am doing this alone with very little help and limited energy. How do I keep it sustainable?",
+    "expected_source_ids": [
+      "podcast-learning-on-your-own",
+      "podcast-affording-path"
+    ]
+  },
+  {
+    "query_id": "community-connection",
+    "query": "Where can we find community and friendships for our kids outside of school?",
+    "expected_source_ids": [
+      "mosaic-web-resources"
+    ]
+  },
+  {
+    "query_id": "stem-activities",
+    "query": "Hands-on science and math activities for a curious child who loves building things.",
+    "expected_source_ids": [
+      "mosaic-web-resources"
+    ]
+  },
+  {
+    "query_id": "college-applications",
+    "query": "How does an unschooled teenager put together a transcript and apply to college?",
+    "expected_source_ids": [
+      "podcast-college-application",
+      "podcast-human-college-process"
+    ]
+  },
+  {
+    "query_id": "family-criticism",
+    "query": "Our relatives keep questioning our choice and we are losing confidence in it.",
+    "expected_source_ids": [
+      "podcast-permission-to-choose"
+    ]
+  },
+  {
+    "query_id": "school-harm",
+    "query": "Our child experienced racism at school and no longer feels safe there.",
+    "expected_source_ids": [
+      "podcast-school-harm"
+    ]
+  },
+  {
+    "query_id": "educator-parent",
+    "query": "I taught in classrooms for years and keep recreating school at home. How do I let go of that?",
+    "expected_source_ids": [
+      "podcast-educators-as-parents"
+    ]
+  }
+]

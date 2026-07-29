@@ -29,3 +29,5 @@ __pycache__/
 
 # Manually curated private source context
 data/manual/
+
+data/vector_store/
