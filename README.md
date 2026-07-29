@@ -77,7 +77,15 @@ Private Mosaic PDF and DOCX files
 * Ruff for formatting and linting
 * Mypy for type checking
 
-A minimal Streamlit interface is planned for a later slice.
+A minimal Streamlit interface and a lean FastAPI service are both implemented. The demo checklist below lists the commands that run them.
+
+## Architecture and handoff
+
+Three documents support a developer taking the project over:
+
+* [docs/architecture.md](docs/architecture.md) explains the design principles, components, contracts, retrieval and grounding behavior, privacy boundaries, and known limitations.
+* [docs/demo-checklist.md](docs/demo-checklist.md) is an ordered checklist for setting up a machine and demonstrating the project end to end.
+* [docs/pathway-review-rubric.md](docs/pathway-review-rubric.md) is the rubric for the human review that the deterministic checks cannot replace.
 
 ## Setup
 
@@ -113,9 +121,6 @@ Configure the Azure OpenAI endpoint and deployment name:
 ```dotenv
 AZURE_OPENAI_BASE_URL=https://YOUR-RESOURCE-NAME.openai.azure.com/openai/v1/
 AZURE_OPENAI_CHAT_DEPLOYMENT=YOUR-DEPLOYMENT-NAME
-
-# Optional when authentication must target a specific Azure tenant
-AZURE_TENANT_ID=
 ```
 
 Authenticate with Azure:
@@ -124,7 +129,13 @@ Authenticate with Azure:
 az login
 ```
 
-When the Azure resource belongs to a different tenant than the Azure CLI default, set `AZURE_TENANT_ID` locally before running generation.
+When the Azure resource belongs to a different tenant than the Azure CLI default, set the tenant in the shell session that runs the project:
+
+```powershell
+$env:AZURE_TENANT_ID = "<tenant-id-that-owns-the-resource>"
+```
+
+Setting `AZURE_TENANT_ID` inside `.env` has no effect, because that file is read by the settings model rather than exported into the process environment.
 
 No API key should be stored in the repository.
 
