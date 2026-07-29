@@ -433,9 +433,30 @@ The deterministic checks validate structure and known failure patterns. They do 
 * human-review rubric created and completed
 * known limits of deterministic evaluation documented
 
+### Slice 5 — Complete
+
+- minimal local Streamlit interface added
+- family intake form supports one or two learners
+- comma-separated family and learner fields converted into validated domain models
+- existing `MosaicPathwayService` reused without duplicating RAG logic
+- embedding model, vector store, and generation service cached across UI reruns
+- pathway rendered as a readable family-facing document
+- retrieved source evidence exposed through a collapsed transparency section
+- wide two-column input and output layout added
+- stale UI error behavior corrected
+- previous pathway can be cleared without rebuilding cached resources
+- submitted family information is not persisted
+- UI helper tests remain independent of Azure OpenAI and the production vector store
+
 ### Next
 
-The next slice will add a minimal Streamlit interface for entering a family profile and generating a grounded pathway.
+The final slice will focus on project handoff:
+
+- concise final documentation
+- architecture explanation
+- reproducible setup and demo checklist
+- educational notebooks
+- final repository cleanup
 
 ## Development slices
 
