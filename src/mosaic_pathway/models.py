@@ -162,6 +162,15 @@ class LearningPathway(BaseModel):
     )
 
 
+class GroundedPathwayResult(BaseModel):
+    """A pathway together with the retrieval that grounded it."""
+
+    intake: FamilyIntake
+    retrieval_query: str
+    retrieved_records: list[RetrievedRecord]
+    pathway: LearningPathway
+
+
 class SourceInventoryItem(BaseModel):
     """Human-reviewed description of one supplied knowledge source."""
 

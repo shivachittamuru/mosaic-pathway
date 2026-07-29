@@ -1,6 +1,6 @@
 # Mosaic Family Pathway MVP
 
-A small, intentionally lean Retrieval-Augmented Generation project for Mosaic.
+A lean Retrieval-Augmented Generation application for Mosaic.
 
 The MVP helps families exploring self-directed learning receive a warm, practical, one-page learning pathway grounded in Mosaic’s materials.
 
@@ -11,7 +11,7 @@ The system:
 1. Collects structured information about a family and its learners.
 2. Retrieves relevant guidance from Mosaic’s knowledge base.
 3. Uses an LLM to generate a personalized learning pathway.
-4. Validates the response against a defined schema.
+4. Validates the generated response and its source references.
 5. Produces a concise pathway containing:
 
    * a reflection of the family’s values and intentions
@@ -24,6 +24,27 @@ The project intentionally avoids agents, orchestration frameworks, cloud databas
 ## Current workflow
 
 ```text
+Structured family intake
+          |
+          v
+Deterministic retrieval query
+          |
+          v
+Local semantic retrieval
+          |
+          v
+Relevant Mosaic passages
+          |
+          v
+Azure OpenAI generation
+          |
+          v
+Validated, grounded LearningPathway
+```
+
+The local knowledge base is prepared separately:
+
+```text
 Private Mosaic PDF and DOCX files
               |
               v
@@ -34,22 +55,7 @@ Private Mosaic PDF and DOCX files
               |
               v
  Local embeddings and Qdrant
-              |
-              v
- Relevant Mosaic passages
-              |
-              v
- Azure OpenAI generation
-              |
-              v
- Validated LearningPathway
 ```
-
-Slices 1 and 2 currently work independently:
-
-* Slice 1 generates a pathway using manually selected context.
-* Slice 2 prepares the Mosaic knowledge base and retrieves context automatically.
-* The next slice will connect retrieval to generation.
 
 ## Technology choices
 
@@ -78,7 +84,7 @@ git clone https://github.com/shivachittamuru/mosaic-pathway.git
 cd mosaic-pathway
 ```
 
-Install the project dependencies:
+Install the dependencies:
 
 ```powershell
 uv sync
@@ -98,11 +104,14 @@ Create a local environment file:
 Copy-Item .env.example .env
 ```
 
-Configure the Azure OpenAI endpoint and deployment name in `.env`:
+Configure the Azure OpenAI endpoint and deployment name:
 
 ```dotenv
 AZURE_OPENAI_BASE_URL=https://YOUR-RESOURCE-NAME.openai.azure.com/openai/v1/
 AZURE_OPENAI_CHAT_DEPLOYMENT=YOUR-DEPLOYMENT-NAME
+
+# Optional when authentication must target a specific Azure tenant
+AZURE_TENANT_ID=
 ```
 
 Authenticate with Azure:
@@ -110,6 +119,8 @@ Authenticate with Azure:
 ```powershell
 az login
 ```
+
+When the Azure resource belongs to a different tenant than the Azure CLI default, set `AZURE_TENANT_ID` locally before running generation.
 
 No API key should be stored in the repository.
 
@@ -135,7 +146,7 @@ Do not commit:
 
 ## Run checks
 
-Run the tests:
+Run all tests:
 
 ```powershell
 uv run pytest
@@ -207,21 +218,7 @@ The generated knowledge base is saved at:
 data/processed/source_records.json
 ```
 
-The current source set produces 807 records:
-
-```text
-Mosaic website resources:                    664
-Navigating self-directed learning alone:      12
-Affording a different path:                   21
-Permission to choose:                         14
-College applications:                         25
-Making the college process human again:       20
-Neurodivergence:                              17
-School harm and racism:                       16
-Educators becoming parents:                   18
-```
-
-Processed content remains excluded from Git.
+The current source set produces 807 validated records. Processed content remains excluded from Git.
 
 ## Run Slice 2B: Index and retrieve
 
@@ -232,8 +229,6 @@ Build or rebuild the local vector index:
 ```powershell
 uv run python -m mosaic_pathway.vector_store
 ```
-
-The index contains one vector and payload for every validated `SourceRecord`.
 
 Run the retrieval demonstration:
 
@@ -248,7 +243,7 @@ The demo runs synthetic family-oriented queries and displays:
 * source title
 * a truncated passage preview
 
-Retrieval requests additional candidates and applies a configurable per-source cap. This prevents the much larger Mosaic website source from occupying every result while preserving semantic-score order.
+Retrieval uses a configurable per-source cap so the much larger Mosaic website source does not occupy every result.
 
 Run the retrieval baseline evaluation:
 
@@ -256,15 +251,51 @@ Run the retrieval baseline evaluation:
 uv run python -m mosaic_pathway.retrieval_evaluation
 ```
 
-The evaluator reports:
+The initial synthetic evaluation produced:
 
-* hit rate at five
-* mean reciprocal rank
-* first expected-source rank
-* retrieved source IDs
-* queries that missed their expected sources
+* 10 queries evaluated
+* 8 hits within the top five
+* 80% hit rate at five
+* misses for family criticism and educator-to-parent transition queries
 
-This is an initial human-authored baseline rather than a complete retrieval benchmark.
+This is a small human-authored baseline rather than a complete retrieval benchmark.
+
+## Run Slice 3: End-to-end RAG generation
+
+Slice 3 connects structured family intake, local retrieval, and Azure OpenAI generation.
+
+Build the knowledge base and vector index first:
+
+```powershell
+uv run python -m mosaic_pathway.knowledge_base
+uv run python -m mosaic_pathway.vector_store
+```
+
+Authenticate with Azure and run the complete workflow:
+
+```powershell
+az login
+uv run python -m mosaic_pathway.slice3_demo
+```
+
+The workflow:
+
+1. Loads a synthetic `FamilyIntake`.
+2. Converts the intake into a deterministic retrieval query.
+3. Retrieves relevant Mosaic records from local Qdrant.
+4. Expands the candidate window when source diversification initially under-fills the requested result count.
+5. Sends only the retrieved passages to Azure OpenAI.
+6. Validates the generated `LearningPathway`.
+7. Confirms that structured source references belong to the retrieved record set.
+8. Preserves the intake, query, retrieved evidence, and pathway in one result.
+
+The complete grounded result is saved locally at:
+
+```text
+data/manual/grounded_pathway_output.json
+```
+
+Structured source IDs are stored in dedicated `source_id` fields rather than being displayed inside family-facing prose.
 
 ## Current status
 
@@ -304,14 +335,33 @@ This is an initial human-authored baseline rather than a complete retrieval benc
 * persistent local Qdrant collection added
 * all 807 source records indexed
 * semantic retrieval implemented
-* source-diversity behavior added
+* configurable source-diversity behavior added
 * synthetic retrieval queries created
 * hit-rate and ranking evaluation added
 * retrieval runs without Azure OpenAI
 
+### Slice 3 — Complete
+
+* structured family intake converted into a deterministic retrieval query
+* relevant Mosaic records retrieved from local Qdrant
+* retrieval candidate expansion added to reduce under-filled result sets
+* retrieved evidence passed to the existing Azure OpenAI generator
+* validated `LearningPathway` produced
+* structured citations checked against the retrieved record set
+* citation markers excluded from family-facing prose
+* intake, retrieval query, evidence, and pathway preserved together
+* generated output kept outside Git
+
 ### Next
 
-The next slice will connect automatic retrieval from Slice 2 with structured pathway generation from Slice 1.
+The next slice will evaluate the complete pathway for:
+
+* retrieval relevance
+* evidence support
+* personalization
+* usefulness
+* tone
+* safety and scope adherence
 
 ## Development slices
 
@@ -319,7 +369,7 @@ The next slice will connect automatic retrieval from Slice 2 with structured pat
 2. **Generation with manual context** — complete
 3. **Content extraction and cleaning** — complete
 4. **Local embeddings and retrieval** — complete
-5. **End-to-end RAG pathway generation**
+5. **End-to-end RAG pathway generation** — complete
 6. **Pathway and retrieval evaluation**
 7. **Minimal Streamlit interface**
 8. **Final documentation, notebooks, and handoff**
@@ -334,10 +384,11 @@ Each slice is intentionally small and must work before the next capability is ad
 * Retrieval quality is currently evaluated using a small synthetic query set.
 * Retrieval uses semantic vector search only.
 * There is no keyword search, reranking, or hybrid retrieval.
-* Retrieval and pathway generation have not yet been connected.
+* A valid source ID does not automatically prove that every generated claim is fully supported by that source.
+* Azure authentication may require an explicit tenant when the resource and CLI defaults differ.
 * No real family data should be used during development.
 
-These limitations are retained intentionally until evaluation demonstrates that additional complexity is necessary.
+These limitations are retained until evaluation demonstrates that additional complexity is necessary.
 
 ## Privacy and scope boundaries
 

@@ -34,9 +34,19 @@ class FakeEmbeddingModel:
 class FakeVectorStore:
     """Returns pre-built payload and score pairs without touching Qdrant."""
 
-    def __init__(self, results: list[tuple[dict[str, Any], float]]) -> None:
+    def __init__(
+        self,
+        results: list[tuple[dict[str, Any], float]],
+        collection_size: int | None = None,
+    ) -> None:
         self.results = results
+        self.collection_size = (
+            len(results) if collection_size is None else collection_size
+        )
         self.requested_limits: list[int] = []
+
+    def count(self) -> int:
+        return self.collection_size
 
     def search(
         self, query_vector: list[float], limit: int

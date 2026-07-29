@@ -6,6 +6,7 @@ from mosaic_pathway.retrieval import (
     MosaicRetriever,
     candidate_limit,
     inventory_source_id,
+    select_diverse_records,
 )
 
 
@@ -57,7 +58,7 @@ def test_results_follow_similarity_order() -> None:
     assert [retrieved.record.source_id for retrieved in result.records] == [
         f"source-{index}-0001" for index in range(5)
     ]
-    assert store.requested_limits == [20]
+    assert store.requested_limits == [5]
 
 
 def test_source_diversity_cap_limits_records_per_source() -> None:
@@ -104,3 +105,83 @@ def test_invalid_payload_fails_validation() -> None:
 
     with pytest.raises(ValidationError):
         retriever.retrieve("a real query")
+
+
+def dominated_payloads(
+    dominant_count: int, distinct_count: int
+) -> list[tuple[dict, float]]:
+    """One source floods the top of the ranking before distinct sources appear."""
+
+    return scored_payloads(
+        [f"mosaic-web-resources-{index:04d}" for index in range(dominant_count)]
+        + [f"podcast-{index}-0001" for index in range(distinct_count)]
+    )
+
+
+def test_first_candidate_window_under_fills_without_expansion() -> None:
+    retriever, store = build_retriever(dominated_payloads(20, 20))
+
+    result = retriever.retrieve("a real query", top_k=5, max_per_source=2)
+
+    assert store.requested_limits[0] == 20
+    assert len(select_diverse_records(store.results[:20], 5, 2)) == 2
+    assert len(result.records) == 5
+
+
+def test_expanding_the_candidate_window_fills_top_k() -> None:
+    retriever, store = build_retriever(dominated_payloads(20, 20))
+
+    result = retriever.retrieve("a real query", top_k=5, max_per_source=2)
+
+    assert store.requested_limits == [20, 40]
+    assert [retrieved.record.source_id for retrieved in result.records] == [
+        "mosaic-web-resources-0000",
+        "mosaic-web-resources-0001",
+        "podcast-0-0001",
+        "podcast-1-0001",
+        "podcast-2-0001",
+    ]
+
+
+def test_expansion_preserves_similarity_score_order() -> None:
+    retriever, store = build_retriever(dominated_payloads(20, 20))
+
+    result = retriever.retrieve("a real query", top_k=5, max_per_source=2)
+    scores = [retrieved.score for retrieved in result.records]
+    expected = {payload["source_id"]: score for payload, score in store.results}
+
+    assert scores == sorted(scores, reverse=True)
+    assert all(
+        retrieved.score == expected[retrieved.record.source_id]
+        for retrieved in result.records
+    )
+
+
+def test_expansion_never_requests_more_than_the_collection_holds() -> None:
+    retriever, store = build_retriever(dominated_payloads(45, 5))
+
+    result = retriever.retrieve("a real query", top_k=5, max_per_source=2)
+
+    assert store.requested_limits == [20, 40, 50]
+    assert max(store.requested_limits) <= store.count()
+    assert len(result.records) == 5
+
+
+def test_impossible_requests_return_fewer_than_top_k() -> None:
+    retriever, store = build_retriever(dominated_payloads(15, 0))
+
+    result = retriever.retrieve("a real query", top_k=5, max_per_source=2)
+
+    assert store.requested_limits == [15]
+    assert len(result.records) == 2
+
+
+def test_expansion_is_deterministic_across_calls() -> None:
+    retriever, store = build_retriever(dominated_payloads(20, 20))
+
+    first = retriever.retrieve("a real query", top_k=5, max_per_source=2)
+    limits_after_first = list(store.requested_limits)
+    second = retriever.retrieve("a real query", top_k=5, max_per_source=2)
+
+    assert first.model_dump() == second.model_dump()
+    assert store.requested_limits == limits_after_first * 2
