@@ -1,3 +1,5 @@
+"""Structured pathway generation through Azure OpenAI."""
+
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from openai import OpenAI
 

@@ -7,30 +7,25 @@ wheels/
 *.egg-info
 
 # Virtual environments
-.venv
+.venv/
 
-# Local Mosaic source materials
-data/raw/*
-!data/raw/.gitkeep
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Generated local data
-data/processed/
-data/qdrant/
+# Notebook checkpoints
+.ipynb_checkpoints/
 
 # Environment variables
 .env
 
-# Python
-__pycache__/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.venv/
+# Private Mosaic source materials
+data/raw/*
+!data/raw/.gitkeep
 
-# Manually curated private source context
+# Local data generated from the private sources
+data/processed/
 data/manual/
-
 data/vector_store/
-
-# Generated evaluation results and private evidence
 data/evaluation/
