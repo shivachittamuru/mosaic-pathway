@@ -1,3 +1,5 @@
+"""System and user prompts for grounded pathway generation."""
+
 import json
 
 from mosaic_pathway.models import FamilyIntake

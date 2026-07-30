@@ -1,3 +1,5 @@
+"""Azure OpenAI configuration loaded from the environment or a local ``.env`` file."""
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 

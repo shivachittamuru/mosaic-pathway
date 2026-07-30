@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from mosaic-pathway!")
+"""Grounded learning-pathway generation for Mosaic families."""

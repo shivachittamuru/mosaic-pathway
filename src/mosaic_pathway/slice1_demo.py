@@ -1,14 +1,17 @@
+"""Generate one structured pathway from manually selected Mosaic context."""
+
 import json
 from pathlib import Path
 from typing import Any
 
 from mosaic_pathway.generation import AzureOpenAIPathwayGenerator
+from mosaic_pathway.knowledge_base import PROJECT_ROOT
 from mosaic_pathway.models import FamilyIntake
 from mosaic_pathway.settings import load_settings
 
-FAMILY_PATH = Path("examples/family_nature.json")
-CONTEXT_PATH = Path("data/manual/context.json")
-OUTPUT_PATH = Path("data/manual/pathway_output.json")
+FAMILY_PATH = PROJECT_ROOT / "examples" / "family_nature.json"
+CONTEXT_PATH = PROJECT_ROOT / "data" / "manual" / "context.json"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "manual" / "pathway_output.json"
 
 
 def load_json(path: Path) -> Any:

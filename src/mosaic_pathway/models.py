@@ -1,3 +1,5 @@
+"""Validated domain models for family intake, source records, and pathways."""
+
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
