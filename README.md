@@ -37,7 +37,7 @@ Local semantic retrieval
 Relevant Mosaic passages
           |
           v
-Azure OpenAI generation
+Anthropic Claude generation
           |
           v
 Validated GroundedPathwayResult
@@ -71,13 +71,19 @@ Private Mosaic PDF and DOCX files
 * Sentence Transformers for local embeddings
 * `all-MiniLM-L6-v2` as the initial embedding model
 * Qdrant local mode for vector storage and similarity search
-* Azure OpenAI for pathway generation
-* Microsoft Entra ID for Azure authentication
+* Anthropic Claude for pathway generation
+* An Anthropic API key for authentication
 * Pytest for tests
 * Ruff for formatting and linting
 * Mypy for type checking
 
 A minimal Streamlit interface and a lean FastAPI service are both implemented. The demo checklist below lists the commands that run them.
+
+## Generation provider
+
+This branch calls the Anthropic Claude API directly through the official `anthropic` package. Generation uses Claude's native structured outputs, so the `LearningPathway` model is passed as the output format and the parsed result is validated by Pydantic before anything reaches a family.
+
+The earlier Azure OpenAI implementation is preserved on the `aoai-generation-branch` branch. Only one generation provider is wired into this branch; there is no provider abstraction, registry, or runtime switch.
 
 ## Architecture and handoff
 
@@ -116,28 +122,24 @@ Create a local environment file:
 Copy-Item .env.example .env
 ```
 
-Configure the Azure OpenAI endpoint and deployment name:
+Configure the Anthropic API key and the Claude model:
 
 ```dotenv
-AZURE_OPENAI_BASE_URL=https://YOUR-RESOURCE-NAME.openai.azure.com/openai/v1/
-AZURE_OPENAI_CHAT_DEPLOYMENT=YOUR-DEPLOYMENT-NAME
+ANTHROPIC_API_KEY=YOUR-ANTHROPIC-API-KEY
+ANTHROPIC_MODEL=YOUR-CLAUDE-MODEL
 ```
 
-Authenticate with Azure:
+Create the key in the Anthropic Console under API keys. Choose a Claude 4.5 or later model that supports structured outputs.
 
-```powershell
-az login
+An optional third variable caps the generated response:
+
+```dotenv
+ANTHROPIC_MAX_TOKENS=
 ```
 
-When the Azure resource belongs to a different tenant than the Azure CLI default, set the tenant in the shell session that runs the project:
+Leave it blank to use the project default.
 
-```powershell
-$env:AZURE_TENANT_ID = "<tenant-id-that-owns-the-resource>"
-```
-
-Setting `AZURE_TENANT_ID` inside `.env` has no effect, because that file is read by the settings model rather than exported into the process environment.
-
-No API key should be stored in the repository.
+No API key should be stored in the repository. `.env` is excluded from Git.
 
 ## Add the private source materials
 
@@ -278,7 +280,7 @@ This is a small human-authored baseline rather than a complete retrieval benchma
 
 ## Run Slice 3: End-to-end RAG generation
 
-Slice 3 connects structured family intake, local retrieval, and Azure OpenAI generation.
+Slice 3 connects structured family intake, local retrieval, and Anthropic Claude generation.
 
 Build the knowledge base and vector index first:
 
@@ -287,10 +289,9 @@ uv run python -m mosaic_pathway.knowledge_base
 uv run python -m mosaic_pathway.vector_store
 ```
 
-Authenticate with Azure and run the complete workflow:
+Run the complete workflow:
 
 ```powershell
-az login
 uv run python -m mosaic_pathway.slice3_demo
 ```
 
@@ -300,7 +301,7 @@ The workflow:
 2. Converts the intake into a deterministic retrieval query.
 3. Retrieves relevant Mosaic records from local Qdrant.
 4. Expands the candidate window when source diversification initially under-fills the requested result count.
-5. Sends only the retrieved passages to Azure OpenAI.
+5. Sends only the retrieved passages to Anthropic Claude.
 6. Validates the generated `LearningPathway`.
 7. Confirms that structured source references belong to the retrieved record set.
 8. Preserves the intake, query, retrieved evidence, and pathway in one result.
@@ -322,12 +323,6 @@ Ensure the knowledge base and vector index already exist:
 ```powershell
 uv run python -m mosaic_pathway.knowledge_base
 uv run python -m mosaic_pathway.vector_store
-```
-
-Authenticate with Azure:
-
-```powershell
-az login
 ```
 
 Run the six-case end-to-end evaluation:
@@ -381,12 +376,11 @@ The deterministic checks validate structure and known failure patterns. They do 
 
 Slice 6 exposes the existing workflow over HTTP so a React or other frontend can call it.
 
-Ensure the knowledge base and vector index already exist, then authenticate with Azure:
+Ensure the knowledge base and vector index already exist:
 
 ```powershell
 uv run python -m mosaic_pathway.knowledge_base
 uv run python -m mosaic_pathway.vector_store
-az login
 ```
 
 Start the service:
@@ -422,13 +416,13 @@ Requests and responses are not persisted or logged.
 
 ### Slice 1 — Complete
 
-* Azure OpenAI integration added
-* Microsoft Entra ID authentication configured
+* Anthropic Claude integration added
+* Anthropic API key authentication configured
 * structured `LearningPathway` generation implemented
 * manually selected Mosaic context supplied to the model
 * Pydantic output validation added
 * generated output stored locally
-* offline tests remain independent of Azure OpenAI
+* offline tests remain independent of the Anthropic API
 
 ### Slice 2A — Complete
 
@@ -449,14 +443,14 @@ Requests and responses are not persisted or logged.
 * configurable source-diversity behavior added
 * synthetic retrieval queries created
 * hit-rate and ranking evaluation added
-* retrieval runs without Azure OpenAI
+* retrieval runs without any generation provider
 
 ### Slice 3 — Complete
 
 * structured family intake converted into a deterministic retrieval query
 * relevant Mosaic records retrieved from local Qdrant
 * retrieval candidate expansion added to reduce under-filled result sets
-* retrieved evidence passed to the existing Azure OpenAI generator
+* retrieved evidence passed to the existing generator
 * validated `LearningPathway` produced
 * structured citations checked against the retrieved record set
 * citation markers excluded from family-facing prose
@@ -488,7 +482,7 @@ Requests and responses are not persisted or logged.
 - stale UI error behavior corrected
 - previous pathway can be cleared without rebuilding cached resources
 - submitted family information is not persisted
-- UI helper tests remain independent of Azure OpenAI and the production vector store
+- UI helper tests remain independent of the Anthropic API and the production vector store
 
 ### Slice 6 — Complete
 
@@ -500,7 +494,7 @@ Requests and responses are not persisted or logged.
 - retrieved evidence reduced to truncated source summaries
 - domain failures mapped to explicit 422, 502, 503, and 500 responses
 - configurable CORS origins added for local frontend development
-- API tests remain offline and independent of Azure OpenAI and Qdrant
+- API tests remain offline and independent of the Anthropic API and Qdrant
 - requests and responses are not persisted or logged
 
 ### Next
@@ -541,7 +535,7 @@ Each slice is intentionally small and must work before the next capability is ad
 * Word-count checks detect empty or runaway sections, not vagueness or repetition.
 * Exact duplicate detection does not identify semantic near-duplicates.
 * Deterministic checks use hard pass or fail outcomes without severity weighting.
-* Azure authentication may require an explicit tenant when the resource and CLI defaults differ.
+* Anthropic API keys are account-scoped and rate limited, so repeated evaluation runs can be throttled.
 * No real family data should be used during development.
 
 These limitations are retained until evidence shows that additional complexity is necessary.

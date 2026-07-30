@@ -1,6 +1,6 @@
 """End-to-end grounded pathway generation over the local Mosaic knowledge base."""
 
-from mosaic_pathway.generation import AzureOpenAIPathwayGenerator
+from mosaic_pathway.generation import ClaudePathwayGenerator
 from mosaic_pathway.models import (
     FamilyIntake,
     GroundedPathwayResult,
@@ -47,7 +47,7 @@ class MosaicPathwayService:
     def __init__(
         self,
         retriever: MosaicRetriever,
-        generator: AzureOpenAIPathwayGenerator,
+        generator: ClaudePathwayGenerator,
     ) -> None:
         self.retriever = retriever
         self.generator = generator

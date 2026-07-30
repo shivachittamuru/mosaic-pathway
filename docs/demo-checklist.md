@@ -13,10 +13,9 @@ knowledge-base build both take several minutes.
 * [ ] Windows with PowerShell, or an equivalent shell with the commands adjusted
 * [ ] Git installed and configured
 * [ ] `uv` installed
-* [ ] Azure CLI installed
-* [ ] An Azure OpenAI resource with a deployed chat model that supports structured
-  outputs
-* [ ] Your Azure account holds a role that permits inference calls on that resource
+* [ ] An Anthropic account with API access
+* [ ] An Anthropic API key created in the Anthropic Console
+* [ ] A Claude model that supports structured outputs, such as a Claude 4.5 or later model
 * [ ] The private Mosaic PDF and DOCX files, received separately and never committed
 * [ ] Network access for the first embedding-model download and for every generation call
 
@@ -25,7 +24,6 @@ Confirm the tools:
 ```powershell
 git --version
 uv --version
-az version
 ```
 
 ## 2. Environment setup
@@ -50,31 +48,20 @@ Create the local environment file:
 Copy-Item .env.example .env
 ```
 
-Edit `.env` and set your own endpoint and deployment name. Do not paste real values into
-chat, tickets, or slides:
+Edit `.env` and set your own API key and model. Do not paste real values into chat,
+tickets, or slides:
 
 ```dotenv
-AZURE_OPENAI_BASE_URL=https://YOUR-RESOURCE-NAME.openai.azure.com/openai/v1/
-AZURE_OPENAI_CHAT_DEPLOYMENT=YOUR-DEPLOYMENT-NAME
+ANTHROPIC_API_KEY=YOUR-ANTHROPIC-API-KEY
+ANTHROPIC_MODEL=YOUR-CLAUDE-MODEL
+ANTHROPIC_MAX_TOKENS=
 MOSAIC_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
-Sign in to Azure:
+`ANTHROPIC_MAX_TOKENS` is optional. Leave it blank to use the project default.
 
-```powershell
-az login
-```
-
-If the Azure OpenAI resource belongs to a different tenant than your CLI default, set
-the tenant in the shell session that will run the demo:
-
-```powershell
-$env:AZURE_TENANT_ID = "<tenant-id-that-owns-the-resource>"
-```
-
-Setting `AZURE_TENANT_ID` inside `.env` has no effect. The settings model reads that
-file, but it does not export values into the process environment where
-`DefaultAzureCredential` looks for them.
+No sign-in command is needed. The key in `.env` is the only credential, it is read by
+the settings model, and `.env` is ignored by Git.
 
 ## 3. Private source placement
 
@@ -115,7 +102,7 @@ changes.
 
 ## 6. Offline checks
 
-Run all four gates. None of them contacts Azure, Qdrant, or the network:
+Run all four gates. None of them contacts the Anthropic API, Qdrant, or the network:
 
 ```powershell
 uv run pytest
@@ -124,7 +111,7 @@ uv run ruff format --check .
 uv run mypy src
 ```
 
-Expected: 163 tests passing, no lint findings, all files formatted, and no type errors.
+Expected: 189 tests passing, no lint findings, all files formatted, and no type errors.
 The full suite takes a few minutes because it imports the embedding stack.
 
 ## 7. Retrieval demo
@@ -155,7 +142,7 @@ uv run python -m mosaic_pathway.slice3_demo
 ```
 
 This runs the complete workflow for the synthetic family in
-`examples/family_nature.json`: query construction, retrieval, Azure OpenAI generation,
+`examples/family_nature.json`: query construction, retrieval, Claude generation,
 and citation verification. The grounded result is written to
 `data/manual/grounded_pathway_output.json`, which is ignored by Git.
 
@@ -172,7 +159,7 @@ uv run python -m mosaic_pathway.slice4_evaluation
 ```
 
 Six synthetic cases run end to end, so this takes noticeably longer than a single
-generation and makes six Azure OpenAI calls. Expected output is one line per case, then
+generation and makes six Anthropic API calls. Expected output is one line per case, then
 6 of 6 cases passed and 60 of 60 checks passed.
 
 Only outcomes print. The grounded results themselves go to `data/evaluation/`, which is
@@ -235,10 +222,10 @@ Stop the server with Ctrl+C when finished.
 
 Run through this list before anyone else sees your screen:
 
-* [ ] Close `.env` and any editor tab showing your endpoint or deployment name
+* [ ] Close `.env` and any editor tab showing your Anthropic API key
 * [ ] Close editor tabs for anything under `data/raw/`, `data/processed/`,
   `data/manual/`, or `data/evaluation/`
-* [ ] Clear the terminal scrollback so earlier output and any tenant ID is gone
+* [ ] Clear the terminal scrollback so earlier output and any credential fragment is gone
 * [ ] Confirm nothing private is staged or untracked
 
 ```powershell
@@ -275,10 +262,12 @@ Common failures:
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| `ValidationError` mentioning `AZURE_OPENAI_BASE_URL` | `.env` missing or incomplete | Copy `.env.example` to `.env` and fill both values |
+| `ValidationError` mentioning `ANTHROPIC_API_KEY` or `ANTHROPIC_MODEL` | `.env` missing or incomplete | Copy `.env.example` to `.env` and fill both values |
 | Message that collection `mosaic_sources` was not found | The index was never built | Run `uv run python -m mosaic_pathway.vector_store` |
 | Storage or lock error mentioning `data/vector_store` | Another process still owns the database | Stop the other process. See section 14 |
-| Azure error mentioning tenant, credential, 401, or 403 | Wrong tenant or expired sign-in | Rerun `az login`, then set `$env:AZURE_TENANT_ID` in this shell |
+| API returns 503 `anthropic_authentication_failed`, or the UI mentions `ANTHROPIC_API_KEY` | The key is missing, revoked, or lacks access to the model | Create a new key in the Anthropic Console and update `.env` |
+| API returns 503 `anthropic_rate_limited` | The account hit an Anthropic rate limit | Wait, then rerun. Avoid the six-case evaluation back to back |
+| API returns 503 `anthropic_unreachable` | Network failure or request timeout | Check connectivity, then rerun |
 | `FileNotFoundError` naming a source ID | A raw file is missing or misnamed | Match the filename in `data/inventory/sources.json` exactly |
 | API returns 503 `service_unavailable` while `/health` returns ok | Startup failed but the process stayed up | Read the message in the response, fix the cause, restart uvicorn |
 | API returns 502 `pathway_not_grounded` | The model cited a passage that was not retrieved | Rerun. Persistent failures belong in the evaluation, not the demo |

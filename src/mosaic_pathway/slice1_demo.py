@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from mosaic_pathway.generation import AzureOpenAIPathwayGenerator
+from mosaic_pathway.generation import ClaudePathwayGenerator
 from mosaic_pathway.knowledge_base import PROJECT_ROOT
 from mosaic_pathway.models import FamilyIntake
 from mosaic_pathway.settings import load_settings
@@ -22,7 +22,7 @@ def main() -> None:
     intake = FamilyIntake.model_validate(load_json(FAMILY_PATH))
     context = load_json(CONTEXT_PATH)
 
-    generator = AzureOpenAIPathwayGenerator(load_settings())
+    generator = ClaudePathwayGenerator(load_settings())
     pathway = generator.generate(intake, context)
 
     output = pathway.model_dump_json(indent=2)

@@ -2,16 +2,26 @@ from collections.abc import Iterator
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from typing import Any
 
+import httpx
 import pytest
+from anthropic import (
+    APIConnectionError,
+    APITimeoutError,
+    AuthenticationError,
+    PermissionDeniedError,
+    RateLimitError,
+)
 from conftest import make_source_record
 from fastapi.testclient import TestClient
 
 from mosaic_pathway.api import (
     PREVIEW_CHARACTERS,
+    ClaudePathwayGenerator,
     create_app,
     parse_allowed_origins,
     summarize_sources,
 )
+from mosaic_pathway.generation import ClaudePathwayGenerator as ProductionGenerator
 from mosaic_pathway.models import (
     CommunitySuggestion,
     FamilyIntake,
@@ -25,6 +35,23 @@ from mosaic_pathway.rag import GroundingError, MosaicPathwayService
 
 LONG_TEXT = "Synthetic Mosaic guidance sentence. " * 40
 SECRET_MARKER = "PRIVATE-TAIL-MARKER"
+PROVIDER_DETAIL = "provider-side detail that must not reach the caller"
+
+
+def anthropic_status_error(
+    error_type: type[AuthenticationError | PermissionDeniedError | RateLimitError],
+    status_code: int,
+) -> Exception:
+    """Build a typed Anthropic status error without contacting the API."""
+
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+
+    return error_type(
+        PROVIDER_DETAIL,
+        response=httpx.Response(status_code, request=request),
+        body=None,
+    )
+
 
 VALID_REQUEST: dict[str, Any] = {
     "children": [
@@ -228,16 +255,61 @@ def test_malformed_request_returns_422() -> None:
     assert fake.calls == []
 
 
-def test_authentication_failure_maps_to_503() -> None:
+@pytest.mark.parametrize(
+    ("error_type", "status_code"),
+    [(AuthenticationError, 401), (PermissionDeniedError, 403)],
+)
+def test_authentication_failure_maps_to_503(
+    error_type: type[AuthenticationError | PermissionDeniedError],
+    status_code: int,
+) -> None:
     client, _ = build_client(
-        FakePathwayService(RuntimeError("Tenant provided in token does not match"))
+        FakePathwayService(anthropic_status_error(error_type, status_code))
     )
 
     with client:
         response = client.post("/api/v1/pathways", json=VALID_REQUEST)
 
     assert response.status_code == 503
-    assert response.json()["detail"]["code"] == "azure_authentication_failed"
+    assert response.json()["detail"]["code"] == "anthropic_authentication_failed"
+    assert PROVIDER_DETAIL not in response.text
+
+
+def test_rate_limiting_maps_to_503() -> None:
+    client, _ = build_client(
+        FakePathwayService(anthropic_status_error(RateLimitError, 429))
+    )
+
+    with client:
+        response = client.post("/api/v1/pathways", json=VALID_REQUEST)
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "anthropic_rate_limited"
+    assert PROVIDER_DETAIL not in response.text
+
+
+@pytest.mark.parametrize("error_type", [APIConnectionError, APITimeoutError])
+def test_connection_and_timeout_failures_map_to_503(
+    error_type: type[APIConnectionError],
+) -> None:
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    error = (
+        APITimeoutError(request=request)
+        if error_type is APITimeoutError
+        else APIConnectionError(message=PROVIDER_DETAIL, request=request)
+    )
+    client, _ = build_client(FakePathwayService(error))
+
+    with client:
+        response = client.post("/api/v1/pathways", json=VALID_REQUEST)
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "anthropic_unreachable"
+    assert PROVIDER_DETAIL not in response.text
+
+
+def test_the_api_builds_the_claude_generator() -> None:
+    assert ClaudePathwayGenerator is ProductionGenerator
 
 
 def test_missing_service_maps_to_503() -> None:
@@ -262,7 +334,9 @@ def test_missing_service_maps_to_503() -> None:
 
 def test_generation_failure_maps_to_502() -> None:
     client, _ = build_client(
-        FakePathwayService(RuntimeError("Model did not return a valid LearningPathway"))
+        FakePathwayService(
+            RuntimeError("Claude did not return a valid LearningPathway")
+        )
     )
 
     with client:

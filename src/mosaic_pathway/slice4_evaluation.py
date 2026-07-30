@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from mosaic_pathway.embeddings import LocalEmbeddingModel
-from mosaic_pathway.generation import AzureOpenAIPathwayGenerator
+from mosaic_pathway.generation import ClaudePathwayGenerator
 from mosaic_pathway.knowledge_base import PROJECT_ROOT
 from mosaic_pathway.models import EvaluationCase, GroundedPathwayResult
 from mosaic_pathway.pathway_evaluation import (
@@ -98,7 +98,7 @@ def main() -> None:
     """Evaluate every synthetic case against the already-built local index."""
 
     cases = load_cases()
-    generator = AzureOpenAIPathwayGenerator(load_settings())
+    generator = ClaudePathwayGenerator(load_settings())
 
     with MosaicVectorStore() as store:
         if not store.collection_exists():
