@@ -1,7 +1,7 @@
 # Mosaic Family Pathway Architecture
 
 This document explains how the MVP works today. Every statement describes code that
-exists in this repository on the `aoai-generation-branch` branch. Planned or possible
+exists in this repository on the `claude-generation-branch` branch. Planned or possible
 future work is marked as conditional.
 
 ## 1. Problem and MVP objective
@@ -60,7 +60,7 @@ Local Qdrant retrieval (vector_store.MosaicVectorStore + retrieval.MosaicRetriev
 Retrieved SourceRecords (list[RetrievedRecord])
         |
         v
-Azure OpenAI structured generation (generation.AzureOpenAIPathwayGenerator)
+Anthropic Claude structured generation (generation.ClaudePathwayGenerator)
         |
         v
 Grounding validation (rag.MosaicPathwayService)
@@ -104,7 +104,7 @@ collection. The request path never reads the raw documents.
 | Module | Responsibility |
 |--------|----------------|
 | `models.py` | Every validated contract in the system, from `ChildProfile` through `EvaluationCase`. Nothing else defines domain shapes. |
-| `settings.py` | `Settings` reads `AZURE_OPENAI_BASE_URL` and `AZURE_OPENAI_CHAT_DEPLOYMENT` from the environment or `.env`. `load_settings()` is the single entry point. |
+| `settings.py` | `Settings` reads `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`, and the optional `ANTHROPIC_MAX_TOKENS` from the environment or `.env`. The key is held as a `SecretStr` so it cannot leak through a repr. `load_settings()` is the single entry point. |
 | `extraction.py` | Turns one PDF or DOCX file into ordered raw paragraphs. PDFs are read block by block with PyMuPDF; DOCX paragraphs are read in document order. Unsupported suffixes raise `UnsupportedFileTypeError`. |
 | `cleaning.py` | Normalizes whitespace, drops an explicit list of navigation and footer lines, applies a few footer patterns, and removes consecutive duplicate paragraphs. The noise list is deliberately literal and easy to edit. |
 | `knowledge_base.py` | Owns `PROJECT_ROOT` and the data paths. Loads the reviewed inventory, extracts and cleans each included source, groups paragraphs into chunks of roughly 1,500 characters with a 2,000 character ceiling, assigns stable IDs of the form `<inventory-source-id>-0001`, validates each record, and writes `data/processed/source_records.json`. |
@@ -113,7 +113,7 @@ collection. The request path never reads the raw documents.
 | `retrieval.py` | Combines the embedding model and the store. Over-fetches candidates, caps results per inventory source, widens the candidate window when the cap under-fills the request, and returns a `RetrievalResult`. |
 | `query_builder.py` | Converts a `FamilyIntake` into one deterministic block of searchable prose, omitting empty fields. No model call is involved. |
 | `prompts.py` | Holds `SYSTEM_PROMPT`, which carries the thirteen behavioral rules, and `build_generation_prompt`, which serializes the intake and the retrieved context into the user message. |
-| `generation.py` | `AzureOpenAIPathwayGenerator` authenticates with Entra ID, calls the Azure OpenAI structured-output API with `LearningPathway` as the response format, and raises on refusal or an unparsed response. |
+| `generation.py` | `ClaudePathwayGenerator` authenticates with an Anthropic API key, calls `client.messages.parse` with `LearningPathway` as the output format, and raises when Claude returns no parsed pathway. |
 | `rag.py` | `MosaicPathwayService` is the composition point for the whole request path, and the only place that verifies citations. Raises `GroundingError` when a pathway cites an identifier that retrieval did not return. |
 | `pathway_evaluation.py` | Ten deterministic checks over one generated pathway, plus the aggregation into an `EvaluationReport`. |
 | `retrieval_evaluation.py` | Baseline retrieval metrics over the synthetic query set: hit rate at five and mean reciprocal rank. |
@@ -137,8 +137,8 @@ collection. The request path never reads the raw documents.
   retrieval reconstructs it by validating the payload rather than by a second lookup.
 * `RetrievedRecord` pairs a `SourceRecord` with its similarity score, and
   `RetrievalResult` pairs the query with the ranked records.
-* `LearningPathway` is the generated artifact and also the schema handed to Azure
-  OpenAI: a family reflection, two to six `RhythmPractice` entries, two or three
+* `LearningPathway` is the generated artifact and also the schema handed to Claude: a
+  family reflection, two to six `RhythmPractice` entries, two or three
   `ResourceRecommendation` entries each carrying a `source_id`, one
   `CommunitySuggestion` with an optional `source_id`, and a closing note.
 * `GroundedPathwayResult` binds a pathway to the evidence that produced it: the intake,
@@ -190,14 +190,17 @@ collection. The request path never reads the raw documents.
   record to its chunk ID, inventory source ID, title, and text, and the system prompt
   forbids inventing organizations, programs, books, websites, or activities that are
   absent from those passages.
-* Generation uses the Azure OpenAI structured-output API. The client is the OpenAI SDK
-  pointed at the Azure base URL, authenticated with a bearer token provider built from
-  `DefaultAzureCredential`. The call passes `LearningPathway` directly as the response
-  format.
-* Pydantic validates the result twice over: the SDK parses the response into
+* Generation uses Claude's native structured outputs. The client is the official
+  `anthropic` SDK authenticated with an API key, and the call passes `LearningPathway`
+  directly as `output_format`. The behavioral rules travel in the top-level `system`
+  parameter rather than as a message, because the Claude Messages API keeps the system
+  prompt outside the message list. The `messages` list therefore holds only the user
+  turn.
+* Pydantic validates the result twice over: the SDK parses `parsed_output` into
   `LearningPathway`, and the model's own field constraints reject a pathway with too few
-  practices or the wrong number of resources. A refusal or an unparsed response raises
-  rather than returning a partial object.
+  practices or the wrong number of resources. A missing parsed output raises rather than
+  returning a partial object. No free-form JSON parsing, regular expressions, or tool-use
+  workarounds are involved.
 * Source identifiers live in dedicated structured fields. The prompt explicitly forbids
   citation markers inside family-facing prose, and a deterministic check enforces this
   afterwards.
@@ -277,48 +280,53 @@ validation.
 
 Two boundaries carry private content out of the process:
 
-* The Azure OpenAI request boundary. Each generation sends the family intake and the
-  retrieved Mosaic passages to the configured Azure OpenAI deployment. This is the only
-  place Mosaic source text leaves the machine, and it is the boundary to review with
-  Mosaic before any wider use.
+* The Anthropic Claude request boundary. Each generation sends the family intake and the
+  retrieved Mosaic passages to the configured Claude model. This is the only place
+  Mosaic source text leaves the machine, and it is the boundary to review with Mosaic
+  before any wider use.
 * The API response boundary. Responses carry the generated pathway plus truncated
   source summaries. This boundary is deliberately narrower than the Streamlit one
   because an HTTP client is assumed to be less trusted than the operator's own screen.
 
 Everything else stays on the machine that ran it.
 
-## 11. Azure OpenAI provider boundary
+## 11. Anthropic Claude provider boundary
 
-Azure-specific code is confined to two modules and one configuration file:
+Claude is the single generation provider on this branch. There is no abstract base
+class, no registry, no factory, and no runtime provider switch. Provider-specific code
+is confined to three modules and one configuration file:
 
-* `generation.py` holds `AzureOpenAIPathwayGenerator`, which builds the Entra ID token
-  provider against the `https://ai.azure.com/.default` scope and calls the structured
-  output API with the deployment name as the model.
-* `settings.py` defines the two required variables, `AZURE_OPENAI_BASE_URL` and
-  `AZURE_OPENAI_CHAT_DEPLOYMENT`.
-* `.env` supplies those values locally, and `.env.example` documents them.
+* `generation.py` holds `ClaudePathwayGenerator`. It constructs an `Anthropic` client
+  from the configured API key and calls `client.messages.parse` with the configured
+  model, the token ceiling, the behavioral rules in the top-level `system` parameter, a
+  single user message, and `LearningPathway` as `output_format`. It returns
+  `response.parsed_output` and raises when that is absent.
+* `settings.py` defines the required `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` plus the
+  optional `ANTHROPIC_MAX_TOKENS`. The model identifier is not hard-coded anywhere in
+  the source, so a newer Claude model is adopted by editing `.env` alone.
+* `api.py` and `app_support.py` import Anthropic exception types purely to classify
+  failures into the responses and messages each surface already defined.
+* `.env` supplies the values locally, and `.env.example` documents them.
 
-Nothing else imports the `openai` or `azure.identity` packages except `api.py`, which
-imports `OpenAIError` purely to classify failures. `MosaicPathwayService` depends on the
-generator object, not on Azure.
+Nothing else imports the `anthropic` package. `MosaicPathwayService` depends on the
+generator object and its single `generate(intake, context) -> LearningPathway` method,
+not on Claude.
 
-The branch `aoai-generation-branch` preserves this working Azure OpenAI implementation.
-It is the reference point to return to if a provider experiment goes badly.
+Failures are classified by exception type rather than by matching error strings.
+`AuthenticationError` and `PermissionDeniedError` become a credentials failure,
+`RateLimitError` becomes a throttling failure, `APIConnectionError` and its timeout
+subclass become a reachability failure, and any other `AnthropicError` becomes a generic
+generation failure. The application does not retry; the SDK's own transport-level retry
+behavior is the only retry in the system, and provider-side error text never reaches a
+family or an HTTP client.
 
-A reasonable future swap would introduce a small protocol describing the single method
-`generate(intake, context) -> LearningPathway`, keep `AzureOpenAIPathwayGenerator` as
-one implementation, add a sibling implementation for another provider, and select
-between them with one setting. `MosaicPathwayService` would not change, because it
-already depends only on that method.
-
-That swap is not free, and the providers are not interchangeable. Azure OpenAI, OpenAI,
-and Anthropic Claude differ in how they express structured output, in how strictly they
-guarantee schema conformance, and in how they authenticate. This project uses Entra ID
-token authentication and the OpenAI SDK's parse helper, which returns an already
-validated `LearningPathway`. Another provider may require an explicit tool or schema
-definition, a different error surface, a separate parsing and validation step, and API
-key handling instead of federated credentials. Any migration should be measured against
-the existing evaluation rather than assumed to be equivalent.
+Provider history: `aoai-generation-branch` preserves the earlier working Azure OpenAI
+implementation, and `claude-generation-branch` is the current Anthropic implementation.
+The two branches, not a runtime abstraction, are how the providers are compared. The
+providers are not interchangeable. They differ in how they express structured output, in
+how strictly they guarantee schema conformance, in how they authenticate, and in where
+the system prompt lives. Any further migration should be measured against the existing
+evaluation rather than assumed to be equivalent.
 
 ## 12. Runtime limitations
 
@@ -326,18 +334,16 @@ the existing evaluation rather than assumed to be equivalent.
   `data/vector_store/` at a time, so the Streamlit app, the API, and any command-line
   demo cannot run concurrently. Starting a second one raises a storage lock error.
 * Generation is synchronous. A request occupies its worker for the full duration of the
-  Azure OpenAI call, which is typically several seconds. There is no streaming, no
-  queue, and no progress reporting beyond the Streamlit spinner.
+  Claude call, which is typically several seconds. There is no streaming, no queue, and
+  no progress reporting beyond the Streamlit spinner.
 * The API is for local development only. It binds to localhost, allows a small list of
   configured browser origins, and assumes a trusted caller.
 * There is no authentication, no authorization, no persistence layer, no rate limiting,
   no background job runner, and no deployment configuration. There is no Dockerfile and
   no CI pipeline.
-* Azure authentication is tenant-sensitive. `DefaultAzureCredential` resolves the Azure
-  CLI default tenant, which may not be the tenant that owns the Azure OpenAI resource.
-  When they differ, set `AZURE_TENANT_ID` in the shell session before running. Setting
-  it in `.env` has no effect, because that file is read by the settings model rather
-  than exported into the process environment.
+* Anthropic API keys are account-scoped and rate limited. A batch run such as the
+  six-case evaluation can be throttled, which surfaces as a rate-limit failure rather
+  than a partial report.
 * The first run of any command that touches embeddings pays a one-time model download,
   and every process start pays several seconds of sentence-transformers import time.
 
