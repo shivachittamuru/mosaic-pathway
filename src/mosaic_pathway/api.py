@@ -4,15 +4,21 @@ from collections.abc import AsyncIterator, Callable, Iterator, Sequence
 from contextlib import AbstractContextManager, asynccontextmanager, contextmanager
 from typing import Annotated
 
+from anthropic import (
+    AnthropicError,
+    APIConnectionError,
+    AuthenticationError,
+    PermissionDeniedError,
+    RateLimitError,
+)
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from openai import OpenAIError
 from pydantic import BaseModel, Field, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from mosaic_pathway.app_support import evidence_preview
 from mosaic_pathway.embeddings import LocalEmbeddingModel
-from mosaic_pathway.generation import AzureOpenAIPathwayGenerator
+from mosaic_pathway.generation import ClaudePathwayGenerator
 from mosaic_pathway.models import FamilyIntake, LearningPathway, RetrievedRecord
 from mosaic_pathway.rag import GroundingError, MosaicPathwayService
 from mosaic_pathway.retrieval import MosaicRetriever
@@ -22,14 +28,6 @@ from mosaic_pathway.vector_store import MosaicVectorStore
 PREVIEW_CHARACTERS = 250
 SCORE_DECIMALS = 4
 DEFAULT_ALLOWED_ORIGINS = ("http://localhost:5173", "http://localhost:3000")
-AUTHENTICATION_SIGNALS = (
-    "tenant",
-    "credential",
-    "unauthorized",
-    "authentication",
-    "401",
-    "403",
-)
 UNAVAILABLE_MESSAGE = (
     "The Mosaic pathway service is not available. Check the local setup and "
     "restart the API."
@@ -39,7 +37,7 @@ ServiceProvider = Callable[[], AbstractContextManager[MosaicPathwayService]]
 
 
 class ApiSettings(BaseSettings):
-    """API-only configuration, kept separate from the Azure OpenAI settings."""
+    """API-only configuration, kept separate from the Anthropic Claude settings."""
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -105,8 +103,8 @@ def describe_setup_failure(error: Exception) -> str:
 
     if isinstance(error, ValidationError):
         return (
-            "Azure OpenAI settings are missing. Set AZURE_OPENAI_BASE_URL and "
-            "AZURE_OPENAI_CHAT_DEPLOYMENT."
+            "Anthropic Claude settings are missing or invalid. Set "
+            "ANTHROPIC_API_KEY and ANTHROPIC_MODEL."
         )
 
     if isinstance(error, RuntimeError):
@@ -118,8 +116,6 @@ def describe_setup_failure(error: Exception) -> str:
 def map_generation_error(error: Exception) -> HTTPException:
     """Map a failure from the pathway service onto an HTTP status and code."""
 
-    text = str(error).lower()
-
     if isinstance(error, GroundingError):
         return api_error(
             status.HTTP_502_BAD_GATEWAY,
@@ -127,7 +123,7 @@ def map_generation_error(error: Exception) -> HTTPException:
             "The generated pathway cited passages that were not retrieved.",
         )
 
-    if "no mosaic records" in text:
+    if "no mosaic records" in str(error).lower():
         return api_error(
             status.HTTP_422_UNPROCESSABLE_CONTENT,
             "no_sources_retrieved",
@@ -135,14 +131,28 @@ def map_generation_error(error: Exception) -> HTTPException:
             "in more detail and try again.",
         )
 
-    if any(signal in text for signal in AUTHENTICATION_SIGNALS):
+    if isinstance(error, AuthenticationError | PermissionDeniedError):
         return api_error(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            "azure_authentication_failed",
-            "Azure authentication failed. Verify az login and AZURE_TENANT_ID.",
+            "anthropic_authentication_failed",
+            "The Anthropic API rejected the credentials. Verify ANTHROPIC_API_KEY.",
         )
 
-    if isinstance(error, OpenAIError | RuntimeError):
+    if isinstance(error, RateLimitError):
+        return api_error(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "anthropic_rate_limited",
+            "The Anthropic API is rate limiting requests. Try again shortly.",
+        )
+
+    if isinstance(error, APIConnectionError):
+        return api_error(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "anthropic_unreachable",
+            "The Anthropic API could not be reached. Check connectivity and try again.",
+        )
+
+    if isinstance(error, AnthropicError | RuntimeError):
         return api_error(
             status.HTTP_502_BAD_GATEWAY,
             "pathway_generation_failed",
@@ -172,7 +182,7 @@ def production_service() -> Iterator[MosaicPathwayService]:
 
         yield MosaicPathwayService(
             MosaicRetriever(LocalEmbeddingModel(), store),
-            AzureOpenAIPathwayGenerator(settings),
+            ClaudePathwayGenerator(settings),
         )
 
 

@@ -4,6 +4,12 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from anthropic import (
+    APIConnectionError,
+    AuthenticationError,
+    PermissionDeniedError,
+    RateLimitError,
+)
 from pydantic import ValidationError
 
 from mosaic_pathway.models import ChildProfile, FamilyIntake, GroundedPathwayResult
@@ -132,27 +138,34 @@ def describe_validation_errors(error: ValidationError) -> list[str]:
 def describe_generation_failure(error: Exception) -> str:
     """Map an exception to one short sentence a family-facing view can show."""
 
-    text = str(error).lower()
-
     if isinstance(error, GroundingError):
         return (
             "The generated pathway cited passages that were not retrieved, so it was "
             "discarded. Try creating it again."
         )
 
-    if "no mosaic records" in text:
+    if "no mosaic records" in str(error).lower():
         return (
             "No Mosaic passages matched this family. Try describing the family's "
             "goals in a little more detail."
         )
 
-    if any(
-        signal in text
-        for signal in ("tenant", "credential", "unauthorized", "authentication", "401")
-    ):
+    if isinstance(error, AuthenticationError | PermissionDeniedError):
         return (
-            "Azure OpenAI rejected the sign-in. Check that you are signed in to the "
-            "Azure tenant that owns the deployment."
+            "The Anthropic API rejected the request. Check that ANTHROPIC_API_KEY in "
+            "your .env file is a valid, active API key."
+        )
+
+    if isinstance(error, RateLimitError):
+        return (
+            "The Anthropic API is rate limiting requests right now. Wait a moment "
+            "and try again."
+        )
+
+    if isinstance(error, APIConnectionError):
+        return (
+            "The Anthropic API could not be reached. Check your network connection "
+            "and try again."
         )
 
     return "The pathway could not be created. See the technical details below."

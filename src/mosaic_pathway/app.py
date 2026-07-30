@@ -19,7 +19,7 @@ from mosaic_pathway.app_support import (
     validate_form_input,
 )
 from mosaic_pathway.embeddings import LocalEmbeddingModel
-from mosaic_pathway.generation import AzureOpenAIPathwayGenerator
+from mosaic_pathway.generation import ClaudePathwayGenerator
 from mosaic_pathway.models import FamilyIntake, GroundedPathwayResult
 from mosaic_pathway.rag import MosaicPathwayService
 from mosaic_pathway.retrieval import MosaicRetriever
@@ -30,7 +30,7 @@ SECOND_CHILD_KEY = "include_second_child"
 
 
 class SetupError(RuntimeError):
-    """Raised when the local index or Azure configuration is not ready."""
+    """Raised when the local index or Anthropic configuration is not ready."""
 
 
 @st.cache_resource(show_spinner="Loading the local Mosaic knowledge base...")
@@ -41,8 +41,8 @@ def load_service() -> MosaicPathwayService:
         settings = load_settings()
     except ValidationError as error:
         raise SetupError(
-            "Azure OpenAI settings are missing. Set AZURE_OPENAI_BASE_URL and "
-            "AZURE_OPENAI_CHAT_DEPLOYMENT in your .env file."
+            "Anthropic Claude settings are missing or invalid. Set "
+            "ANTHROPIC_API_KEY and ANTHROPIC_MODEL in your .env file."
         ) from error
 
     store = MosaicVectorStore()
@@ -57,7 +57,7 @@ def load_service() -> MosaicPathwayService:
 
     return MosaicPathwayService(
         MosaicRetriever(LocalEmbeddingModel(), store),
-        AzureOpenAIPathwayGenerator(settings),
+        ClaudePathwayGenerator(settings),
     )
 
 
@@ -279,7 +279,7 @@ def render_method() -> None:
             "1. Your intake was turned into a single search query.\n"
             "2. Relevant Mosaic passages were retrieved from the local index on "
             "this machine.\n"
-            "3. Azure OpenAI wrote the pathway using only those passages.\n"
+            "3. Claude wrote the pathway using only those passages.\n"
             "4. Every cited source ID was checked against the retrieved records "
             "before the pathway was shown."
         )

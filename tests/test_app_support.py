@@ -1,4 +1,6 @@
+import httpx
 import pytest
+from anthropic import APITimeoutError, AuthenticationError, RateLimitError
 from pydantic import ValidationError
 
 from mosaic_pathway.app_support import (
@@ -185,10 +187,34 @@ def test_empty_retrieval_failure_has_its_own_message() -> None:
     assert "No Mosaic passages matched" in describe_generation_failure(error)
 
 
-def test_authentication_failure_mentions_the_tenant() -> None:
-    error = RuntimeError("Token tenant abc does not match resource tenant.")
+def test_authentication_failure_mentions_the_anthropic_api_key() -> None:
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    error = AuthenticationError(
+        "provider detail",
+        response=httpx.Response(401, request=request),
+        body=None,
+    )
 
-    assert "Azure tenant" in describe_generation_failure(error)
+    assert "ANTHROPIC_API_KEY" in describe_generation_failure(error)
+
+
+def test_rate_limit_failure_asks_the_family_to_wait() -> None:
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+    error = RateLimitError(
+        "provider detail",
+        response=httpx.Response(429, request=request),
+        body=None,
+    )
+
+    assert "rate limiting" in describe_generation_failure(error)
+
+
+def test_connection_failure_mentions_reaching_the_api() -> None:
+    request = httpx.Request("POST", "https://api.anthropic.com/v1/messages")
+
+    assert "could not be reached" in describe_generation_failure(
+        APITimeoutError(request=request)
+    )
 
 
 def test_unknown_failure_falls_back_to_technical_details() -> None:

@@ -8,9 +8,8 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "azure-identity>=1.25.3",
+    "anthropic>=0.120.2",
     "fastapi>=0.141.1",
-    "openai>=2.50.0",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
     "pymupdf>=1.28.0",

@@ -1,27 +1,22 @@
-"""Structured pathway generation through Azure OpenAI."""
+"""Structured pathway generation through the Anthropic Claude API."""
 
-from azure.identity import DefaultAzureCredential, get_bearer_token_provider
-from openai import OpenAI
+from anthropic import Anthropic
 
 from mosaic_pathway.models import FamilyIntake, LearningPathway
 from mosaic_pathway.prompts import SYSTEM_PROMPT, build_generation_prompt
 from mosaic_pathway.settings import Settings
 
 
-class AzureOpenAIPathwayGenerator:
-    """Generate structured pathways with Azure OpenAI and Entra ID."""
+class ClaudePathwayGenerator:
+    """Generate structured pathways with Claude's native structured outputs."""
 
-    def __init__(self, settings: Settings) -> None:
-        token_provider = get_bearer_token_provider(
-            DefaultAzureCredential(),
-            "https://ai.azure.com/.default",
+    def __init__(self, settings: Settings, client: Anthropic | None = None) -> None:
+        # The client is injectable so tests can exercise this class offline.
+        self._client = client or Anthropic(
+            api_key=settings.anthropic_api_key.get_secret_value()
         )
-
-        self._client = OpenAI(
-            base_url=settings.azure_openai_base_url,
-            api_key=token_provider,
-        )
-        self._deployment = settings.azure_openai_chat_deployment
+        self._model = settings.anthropic_model
+        self._max_tokens = settings.anthropic_max_tokens
 
     def generate(
         self,
@@ -30,27 +25,22 @@ class AzureOpenAIPathwayGenerator:
     ) -> LearningPathway:
         prompt = build_generation_prompt(intake, context)
 
-        completion = self._client.beta.chat.completions.parse(
-            model=self._deployment,
+        response = self._client.messages.parse(
+            model=self._model,
+            max_tokens=self._max_tokens,
+            system=SYSTEM_PROMPT,
             messages=[
-                {
-                    "role": "system",
-                    "content": SYSTEM_PROMPT,
-                },
                 {
                     "role": "user",
                     "content": prompt,
-                },
+                }
             ],
-            response_format=LearningPathway,
+            output_format=LearningPathway,
         )
 
-        message = completion.choices[0].message
+        pathway = response.parsed_output
 
-        if message.refusal:
-            raise RuntimeError(f"Model refused the request: {message.refusal}")
+        if pathway is None:
+            raise RuntimeError("Claude did not return a valid LearningPathway")
 
-        if message.parsed is None:
-            raise RuntimeError("Model did not return a valid LearningPathway")
-
-        return message.parsed
+        return pathway

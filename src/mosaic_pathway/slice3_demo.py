@@ -3,7 +3,7 @@
 import json
 
 from mosaic_pathway.embeddings import LocalEmbeddingModel
-from mosaic_pathway.generation import AzureOpenAIPathwayGenerator
+from mosaic_pathway.generation import ClaudePathwayGenerator
 from mosaic_pathway.knowledge_base import PROJECT_ROOT
 from mosaic_pathway.models import FamilyIntake
 from mosaic_pathway.rag import MosaicPathwayService
@@ -19,7 +19,7 @@ def main() -> None:
     intake = FamilyIntake.model_validate(
         json.loads(FAMILY_PATH.read_text(encoding="utf-8"))
     )
-    generator = AzureOpenAIPathwayGenerator(load_settings())
+    generator = ClaudePathwayGenerator(load_settings())
 
     with MosaicVectorStore() as store:
         if not store.collection_exists():
