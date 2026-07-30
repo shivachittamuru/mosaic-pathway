@@ -83,8 +83,6 @@ A minimal Streamlit interface and a lean FastAPI service are both implemented. T
 
 This branch calls the Anthropic Claude API directly through the official `anthropic` package. Generation uses Claude's native structured outputs, so the `LearningPathway` model is passed as the output format and the parsed result is validated by Pydantic before anything reaches a family.
 
-The earlier Azure OpenAI implementation is preserved on the `aoai-generation-branch` branch. Only one generation provider is wired into this branch; there is no provider abstraction, registry, or runtime switch.
-
 ## Architecture and handoff
 
 Three documents support a developer taking the project over:
