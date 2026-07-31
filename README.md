@@ -495,16 +495,6 @@ Requests and responses are not persisted or logged.
 - API tests remain offline and independent of the Anthropic API and Qdrant
 - requests and responses are not persisted or logged
 
-### Next
-
-The final slice will focus on project handoff:
-
-- concise final documentation
-- architecture explanation
-- reproducible setup and demo checklist
-- educational notebooks
-- final repository cleanup
-
 ## Development slices
 
 1. **Foundation and contracts** — complete
